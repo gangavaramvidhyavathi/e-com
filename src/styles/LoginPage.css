@@ -120,6 +120,31 @@
   right: 0;
 }
 
+.toggle-auth {
+  text-align: center;
+  margin: 1.5rem 0;
+  color: var(--text-secondary);
+}
+
+.toggle-auth p {
+  margin: 0;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: var(--transition);
+  padding: 0;
+}
+
+.toggle-btn:hover {
+  color: var(--primary-dark);
+}
+
 .oauth-btn {
   width: 100%;
   padding: 0.75rem;
@@ -147,6 +172,7 @@
   text-align: center;
   color: var(--text-secondary);
   font-size: 0.95rem;
+  display: none;
 }
 
 .signup-link a {

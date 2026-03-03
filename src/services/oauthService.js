@@ -1,52 +1,100 @@
-// OAuth Service for authentication
-// This demonstrates OAuth flow pattern - integrate with actual OAuth provider
+import axios from 'axios';
 
-const OAUTH_CONFIG = {
-  clientId: 'your_client_id',
-  redirectUri: 'http://localhost:5173/auth/callback',
-  authEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth', // Example with Google
-  tokenEndpoint: 'https://oauth2.googleapis.com/token',
-  scope: 'openid profile email'
-};
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
-export const initiateOAuthLogin = () => {
-  // In a real application, redirect to OAuth provider
-  const oauthUrl = `${OAUTH_CONFIG.authEndpoint}?` + 
-    `client_id=${OAUTH_CONFIG.clientId}&` +
-    `redirect_uri=${encodeURIComponent(OAUTH_CONFIG.redirectUri)}&` +
-    `response_type=code&` +
-    `scope=${encodeURIComponent(OAUTH_CONFIG.scope)}`;
-  
-  window.location.href = oauthUrl;
-};
+// OAuth Service for authentication with backend
+const authClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 5000,
+});
 
-export const handleOAuthCallback = async (code) => {
+// Register a new user
+export const registerUser = async (name, email, password) => {
   try {
-    // In a real app, exchange code for token with your backend
-    const response = await fetch('/api/auth/oauth/callback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code })
+    const response = await authClient.post('/auth/register', {
+      name,
+      email,
+      password
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Registration error:', error);
+    throw error.response?.data || error;
+  }
+};
+
+// Login user with email and password
+export const loginUser = async (email, password) => {
+  try {
+    const response = await authClient.post('/auth/login', {
+      email,
+      password
     });
     
-    const data = await response.json();
-    return data;
+    const { token, user } = response.data;
+    
+    // Store token
+    localStorage.setItem('jwtToken', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    
+    return { token, user };
   } catch (error) {
-    console.error('OAuth callback error:', error);
+    console.error('Login error:', error);
+    throw error.response?.data || error;
+  }
+};
+
+// Get current user
+export const getCurrentUser = async (token) => {
+  try {
+    const response = await authClient.get('/auth/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching current user:', error);
     throw error;
   }
 };
 
-export const mockOAuthLogin = (email = 'user@example.com') => {
-  // Mock OAuth response for demo purposes
-  const mockUser = {
-    id: 'oauth_' + Math.random().toString(36).substr(2, 9),
-    email,
-    name: email.split('@')[0],
-    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`
-  };
+// Logout
+export const logoutUser = () => {
+  localStorage.removeItem('jwtToken');
+  localStorage.removeItem('user');
+};
 
-  const mockToken = 'mock_oauth_token_' + Math.random().toString(36).substr(2, 20);
-  
-  return { user: mockUser, token: mockToken };
+// Update user profile
+export const updateUserProfile = async (userId, name, email) => {
+  try {
+    const token = localStorage.getItem('jwtToken');
+    const response = await authClient.put(`/users/${userId}`, {
+      name,
+      email
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    throw error;
+  }
+};
+
+// Change password
+export const changePassword = async (userId, oldPassword, newPassword) => {
+  try {
+    const token = localStorage.getItem('jwtToken');
+    const response = await authClient.post(
+      `/users/${userId}/change-password`,
+      {},
+      {
+        params: { oldPassword, newPassword },
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error changing password:', error);
+    throw error;
+  }
 };

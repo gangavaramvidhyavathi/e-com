@@ -32,7 +32,12 @@ const HomePage = () => {
   }, []);
 
   const filteredProducts = selectedCategory
-    ? products.filter(p => p.category === selectedCategory)
+    ? products.filter(p => {
+        // Handle both string and object category formats
+        const categoryName = typeof p.category === 'string' ? p.category : p.category?.name;
+        const selectedCategoryName = typeof selectedCategory === 'string' ? selectedCategory : selectedCategory?.name;
+        return categoryName === selectedCategoryName;
+      })
     : products;
 
   if (loading) return <div className="loading">Loading products...</div>;
@@ -56,15 +61,19 @@ const HomePage = () => {
           >
             All Products
           </button>
-          {categories.map(category => (
-            <button
-              key={category}
-              className={`filter-btn ${selectedCategory === category ? 'active' : ''}`}
-              onClick={() => setSelectedCategory(category)}
-            >
-              {category}
-            </button>
-          ))}
+          {categories.map(category => {
+            const categoryName = typeof category === 'string' ? category : category?.name;
+            const categoryId = typeof category === 'string' ? category : category?.id;
+            return (
+              <button
+                key={categoryId || categoryName}
+                className={`filter-btn ${selectedCategory === category ? 'active' : ''}`}
+                onClick={() => setSelectedCategory(category)}
+              >
+                {categoryName}
+              </button>
+            );
+          })}
         </aside>
 
         <main className="products-grid">
